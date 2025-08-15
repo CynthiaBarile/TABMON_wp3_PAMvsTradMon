@@ -1,0 +1,14 @@
+# RStudio junk
+.Rhistory
+.RData
+.Rproj.user/
+
+# Environment files
+.Renviron
+.env
+
+# OS junk
+Thumbs.db
+
+# Ignore data folders
+01_data/
