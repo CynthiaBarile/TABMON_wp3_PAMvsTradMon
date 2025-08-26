@@ -2,24 +2,26 @@
 ## 02_prepare_comparison_data.R
 ## 🦆 Loads cleaned acoustic data database
 ## 📌 Loads cleaned territory mapping data
-## 🆚 Prepare for comparison
+## 🆚 Prepare for comparison using Loenderveen as case study
+## Input:  01_data > 
+## Output: 01_data > 
 ## -----------------------------
 
 # ----------------------------------
 # LOADING LIBRARIES, CONFIG, DATA
 # ----------------------------------
 
-# Load config files for the current project
-source("01_config.R")
+# Load config file
+source("02_scripts/01_config.R")
 
 # Load data
-visits_data <- readRDS(tm_visits_path)               # Visits from territory mapping data (cleaned & enriched)
-db_connect <- dbConnect(duckdb(), bugg_db_path)      # BUGG data (cleaned)
+visits_data <- readRDS(visits_data_path)                    # Visits from territory mapping data (cleaned & enriched)
+bugg_db_connect <- dbConnect(duckdb(), bugg_db_path)        # BUGG database connection (cleaned)
 
-# Prep data for Loenderveen only
+# Export Loenderveen only from `visits_data`
 ldv_visits_data <- visits_data %>%
   filter(cluster == "Loenderveen") %>%
-  select(site_name, visit_id, date, start_time, end_time, visit_duration_minutes, 
+  select(plot_name, visit_id, date, start_time, end_time, visit_duration_minutes, 
          obs_id, scientific_name, english_name, observation_type, breeding_code, 
          notes, territory_cluster, x_coord, y_coord, geometry)
 
