@@ -46,7 +46,7 @@ termap_windows <- ldv_visits_data %>%
 dbWriteTable(bugg_db_connect, "termap_visit_windows", termap_windows, temporary = TRUE)     # Write as temporary table in database
 
 # Proceed to filtering the db for data matching those time intervals, in Loenderveen only
-ldv_pam_filtered <- dbGetQuery(bugg_db_connect, "                                
+ldv_pam_filtered_24h <- dbGetQuery(bugg_db_connect, "                                
   SELECT pam.*                                                        -- Select all columns (*) from the BUGG table
   FROM all_data_with_metadata pam                                     -- Use the table all_data_with_metadata, and assign it the alias BUGG
   JOIN termap_visit_windows win                                       -- Join this with the termap_visit_windows table (alias: win)
@@ -55,7 +55,7 @@ ldv_pam_filtered <- dbGetQuery(bugg_db_connect, "
   WHERE pam.cluster = 'loenderveen'                                   -- Only keep BUGG rows from the 'loenderveen' cluster
 ")
 
-saveRDS(ldv_pam_filtered, file = file.path(processed_data_dir, "01_ldv_pam_filtered_24h.rds"))
+saveRDS(ldv_pam_filtered_24h, file = file.path(data_dir, "01_ldv_pam_filtered_24h.rds"))
 # This file containing Loenderveen data temporally filtered to contain detections occurring only within ±24h of individual territory mapping visits.
 
 # ----------------------------------------------
@@ -63,7 +63,7 @@ saveRDS(ldv_pam_filtered, file = file.path(processed_data_dir, "01_ldv_pam_filte
 # ----------------------------------------------
 # Get coordinates of individual sensors locations, projected to local EPSG
 
-pam_sensors_sf <- ldv_pam_filtered %>%
+pam_sensors_sf <- ldv_pam_filtered_24h %>%
   distinct(device_id, site, latitude, longitude) %>%
   st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
   st_transform(crs_projected)                                            # EPSG:28992 – Amersfoort / RD New, project for measuring buffers
@@ -83,11 +83,11 @@ ldv_termap_filtered_100m <- sightings_within_100m %>%
 
 # Checking that this looks good
 ggplot() +
-  geom_sf(data = pam_buffers, fill = "grey", color = "grey30", alpha = 0.3) +        # Buffers
-  geom_sf(data = pam_sensors_sf, color = "grey30", size = 2) +                       # Sensor points
+  geom_sf(data = pam_buffers, fill = "grey", color = "grey30", alpha = 0.3) +                 # Buffers
+  geom_sf(data = pam_sensors_sf, color = "grey30", size = 2) +                                # Sensor points
   geom_sf(data = ldv_termap_filtered_100m, aes(color = scientific_name), size = 1) +          # Filtered TM sightings
   theme_minimal() +
   labs(title = "Territory mapping sightings within 100m of PAM sensors (Loenderveen)",
        color = "Species")
 
-saveRDS(ldv_termap_filtered_100m, file = file.path(processed_data_dir, "02_ldv_termap_filtered_100m.rds"))
+saveRDS(ldv_termap_filtered_100m, file = file.path(data_dir, "02_ldv_termap_filtered_100m.rds"))
