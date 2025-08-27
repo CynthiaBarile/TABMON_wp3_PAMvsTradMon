@@ -1,15 +1,14 @@
 ## -----------------------------
+## TABMON_PAMvsTerMap.Rproject
 ## 02_prepare_comparison_data.R
 ## 🦆 Loads cleaned acoustic data database
 ## 📌 Loads cleaned territory mapping data
 ## 🆚 Prepare for comparison using Loenderveen as case study
-## Input:  01_data > 
-## Output: 01_data > 
+## Input:  TABMON_dataprep > territoryMappingData > 01_data > processed > 05_visits_only_data.rds
+##         TABMON_dataprep > buggData > 01_data > buggdata_db.duckdb
+## Output: 01_data > TABMON_PAMvsTerMap > 01_data > 01_ldv_pam_filtered_24h.rds
+##         01_data > TABMON_PAMvsTerMap > 01_data > 02_ldv_termap_filtered_100m.rds
 ## -----------------------------
-
-# ----------------------------------
-# LOADING LIBRARIES, CONFIG, DATA
-# ----------------------------------
 
 # Load config file
 source("02_scripts/01_config.R")
@@ -21,21 +20,21 @@ bugg_db_connect <- dbConnect(duckdb(), bugg_db_path)        # BUGG database conn
 # Export Loenderveen only from `visits_data`
 ldv_visits_data <- visits_data %>%
   filter(cluster == "Loenderveen") %>%
-  select(plot_name, visit_id, date, start_time, end_time, visit_duration_minutes, 
-         obs_id, scientific_name, english_name, observation_type, breeding_code, 
-         notes, territory_cluster, x_coord, y_coord, geometry)
+  select(plot_name, cluster, visit_id, date, start_time, end_time, visit_duration_minutes, 
+         obs_id, scientific_name, english_name, territory_cluster, observation_type, breeding_code, 
+         notes, geometry)
 
 # Query BUGG data
-dbListTables(db_connect)                                                       # See what's inside the db
-dbListFields(db_connect, "all_data_with_metadata")                             # List the columns of the table
-dbGetQuery(db_connect, "SELECT * FROM all_data_with_metadata LIMIT 10")        # First rows
+dbListTables(bugg_db_connect)                                                       # See what's inside the db
+dbListFields(bugg_db_connect, "all_data_with_metadata")                             # List the columns of the table
+dbGetQuery(bugg_db_connect, "SELECT * FROM all_data_with_metadata LIMIT 10")        # First rows
 
 # ----------------------------------------------
 # SUBSET PAM DATA TO TERRITORY MAPPING PERIODS
 # ----------------------------------------------
 
-# Get a df of unique time interval of +/- 24 hours around territory mapping visits
-tm_windows <- ldv_visits_data %>%
+# Subset unique time intervals (+/- 24 hours) around each territory mapping visit
+termap_windows <- ldv_visits_data %>%
   mutate(
     visit_start  = as_datetime(date) + start_time,
     visit_end    = as_datetime(date) + end_time,
@@ -44,23 +43,23 @@ tm_windows <- ldv_visits_data %>%
   ) %>%
   distinct(visit_id, window_start, window_end)                          # Deduplicate
 
-dbWriteTable(db_connect, "tm_visit_windows", tm_windows, temporary = TRUE)     # Write as temporary table in database
+dbWriteTable(bugg_db_connect, "termap_visit_windows", termap_windows, temporary = TRUE)     # Write as temporary table in database
 
 # Proceed to filtering the db for data matching those time intervals, in Loenderveen only
-ldv_pam_filtered <- dbGetQuery(db_connect, "                                
+ldv_pam_filtered <- dbGetQuery(bugg_db_connect, "                                
   SELECT pam.*                                                        -- Select all columns (*) from the BUGG table
   FROM all_data_with_metadata pam                                     -- Use the table all_data_with_metadata, and assign it the alias BUGG
-  JOIN tm_visit_windows win                                           -- Join this with the tm_visit_windows table (alias: win)
+  JOIN termap_visit_windows win                                       -- Join this with the termap_visit_windows table (alias: win)
     ON pam.detection_time_utc 
     BETWEEN win.window_start AND win.window_end                       -- Only keep BUGG rows where detection time falls within any TM visit window
   WHERE pam.cluster = 'loenderveen'                                   -- Only keep BUGG rows from the 'loenderveen' cluster
 ")
 
-saveRDS(ldv_pam_filtered, file = file.path(processed_data_dir, "ldv_pam_filtered.rds"))
-# This file containing Loenderveen data temporally filtered to contain detections occurring only within ±24h of individual TM visits.
+saveRDS(ldv_pam_filtered, file = file.path(processed_data_dir, "01_ldv_pam_filtered_24h.rds"))
+# This file containing Loenderveen data temporally filtered to contain detections occurring only within ±24h of individual territory mapping visits.
 
 # ----------------------------------------------
-# FILTER TM SIGHTINGS TO 100m AROUND BUGGs
+# FILTER TERRITORY MAPPING SIGHTINGS TO 100m AROUND BUGGs
 # ----------------------------------------------
 # Get coordinates of individual sensors locations, projected to local EPSG
 
@@ -75,10 +74,10 @@ pam_buffers <- pam_sensors_sf %>%                                        # Creat
 ldv_visits_data_proj <- ldv_visits_data %>%                              # Project territory mapping data to the same CRS
   st_transform(crs_projected)
 
-sightings_within_100m <- ldv_visits_data_proj %>%                        # Join spatially the sightings falling within those buffer zones
+sightings_within_100m <- ldv_visits_data_proj %>%                        # Spatially join the sightings falling within those buffer zones
   st_join(pam_buffers, join = st_within, left = FALSE)                   # left = FALSE drops non-matches
 
-ldv_tm_filtered <- sightings_within_100m %>%
+ldv_termap_filtered_100m <- sightings_within_100m %>%
   rename(pam_site = site) %>%                                            # Rename PAM site to avoid confusion with territory mapping sites
   relocate(device_id, pam_site, .after = visit_id)                       # Organise columns for clarity
 
@@ -86,9 +85,9 @@ ldv_tm_filtered <- sightings_within_100m %>%
 ggplot() +
   geom_sf(data = pam_buffers, fill = "grey", color = "grey30", alpha = 0.3) +        # Buffers
   geom_sf(data = pam_sensors_sf, color = "grey30", size = 2) +                       # Sensor points
-  geom_sf(data = ldv_tm_filtered, aes(color = scientific_name), size = 1) +          # Filtered TM sightings
+  geom_sf(data = ldv_termap_filtered_100m, aes(color = scientific_name), size = 1) +          # Filtered TM sightings
   theme_minimal() +
-  labs(title = "TM sightings within 100m of PAM sensors (Loenderveen)",
+  labs(title = "Territory mapping sightings within 100m of PAM sensors (Loenderveen)",
        color = "Species")
 
-saveRDS(ldv_tm_filtered, file = file.path(processed_data_dir, "ldv_tm_filtered.rds"))
+saveRDS(ldv_termap_filtered_100m, file = file.path(processed_data_dir, "02_ldv_termap_filtered_100m.rds"))
