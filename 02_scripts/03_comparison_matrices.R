@@ -12,6 +12,14 @@
 
 source("02_scripts/01_config.R")
 
+# Load data
+ldv_visits <- readRDS(ldv_termap_path) 
+ldv_visits_100m <- readRDS(ldv_termap_100m_path) 
+ldv_pam_season <- readRDS(ldv_pam_season_path) 
+ldv_pam_tw1 <- readRDS(ldv_pam_tw1_exact_path) 
+ldv_pam_tw2 <- readRDS(ldv_pam_tw2_day_path) 
+ldv_pam_tw3 <- readRDS(ldv_pam_tw3_week_path) 
+
 # ----------------------------------------------
 # HELPER FUNCTIONS & OBJECTS
 # ----------------------------------------------
@@ -56,14 +64,14 @@ pam_subsets <- list(
   cluster_season  = ldv_pam_season)            # PAM, cluster-level, full season
 
 tm_subsets <- list(
-  sensor_tw1      = ldv_termap_filtered_100m,  # TM, sensor-level
-  sensor_tw2      = ldv_termap_filtered_100m,
-  sensor_tw3      = ldv_termap_filtered_100m,
-  sensor_season   = ldv_termap_filtered_100m,
-  cluster_tw1     = ldv_visits_data,           # TM, cluster-level (full area)
-  cluster_tw2     = ldv_visits_data,
-  cluster_tw3     = ldv_visits_data,
-  cluster_season  = ldv_visits_data)
+  sensor_tw1      = ldv_visits_100m,           # TM, sensor-level
+  sensor_tw2      = ldv_visits_100m,
+  sensor_tw3      = ldv_visits_100m,
+  sensor_season   = ldv_visits_100m,
+  cluster_tw1     = ldv_visits,                # TM, cluster-level (full area)
+  cluster_tw2     = ldv_visits,
+  cluster_tw3     = ldv_visits,
+  cluster_season  = ldv_visits)
 
 row_units <- list(
   sensor_tw1      = "device_id",               # sensor-level rows
@@ -136,3 +144,4 @@ identical(colnames(m1), colnames(m2))  # should be TRUE
 rowSums(matrix_list[["sensor_tw1_pam"]])  # number of species per sensor (PAM)
 rowSums(matrix_list[["sensor_tw1_tm"]])   # number of species per sensor (TM)
 
+saveRDS(matrix_list, file = file.path(project_root, data_dir, "07_presence_absence_matrices.rds"))
