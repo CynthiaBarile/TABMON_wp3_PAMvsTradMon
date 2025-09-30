@@ -18,6 +18,8 @@ library(lubridate)
 library(RColorBrewer)
 library(scales)
 library(sf)                        # This must be loaded or the geometry breaks when opening the visits_data object
+library(stringr)
+library(tidyr)
 
 # --- Paths ---
 
@@ -38,19 +40,3 @@ ldv_pam_tw3_week_path   <- file.path(data_dir, "05_ldv_pam_tw3_week.rds")
 
 crs_projected <- 28992             # Projected local CRS Amersfoort / RD New
 buffer100 <- 100                   # Buffer radius in meters to filter TM sightings around sensors
-
-# --- Helper functions ---
-
-# Query BUGG data in the duckdb database, given time windows defined
-subset_pam_time_windows <- function(tw_start, tw_end) {
-  # Build SQL query
-  query <- paste0(                                                    # paste0() space sensitive, do not return to line whenever or remove spaces or it will fail.
-    "SELECT pam.*, win.visit_id, win.date ",                          # Select all PAM fields + visit_id + date from TM windows
-    "FROM all_data_with_metadata pam ",                               # From main PAM table, alias as 'pam'
-    "JOIN ldv_termap_tw win ",                                        # Join with the termap visit windows table, alias as 'win'
-    # Condition: PAM detection timestamp must fall between the chosen start/end column of the TM visit window
-    "ON pam.detection_time_utc BETWEEN win.", tw_start, " AND win.", tw_end, " ",
-    "WHERE pam.cluster = 'loenderveen'"                               # Only keep PAM detections from the 'loenderveen' cluster
-  )
-  dbGetQuery(bugg_db_connect, query)
-}
