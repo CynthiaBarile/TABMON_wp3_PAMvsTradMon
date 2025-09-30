@@ -39,6 +39,9 @@ ldv_pam_tw1_exact_path  <- file.path(data_dir, "04_ldv_pam_tw1_exact.rds")
 ldv_pam_tw2_day_path    <- file.path(data_dir, "05_ldv_pam_tw2_day.rds") 
 ldv_pam_tw3_week_path   <- file.path(data_dir, "06_ldv_pam_tw3_week.rds") 
 
+# Path to presence absence matrices
+pa_matrices_path        <- file.path(data_dir, "07_presence_absence_matrices.rds")
+
 # --- Constants ---
 
 crs_projected <- 28992             # Projected local CRS Amersfoort / RD New
