@@ -29,12 +29,15 @@ data_dir <- "01_data"
 termap_data_path <- "../TABMON_dataprep/territoryMappingData/01_data/processed/04_data_enriched.rds"      # Full territory mapping data (cleaned, translated, enriched)
 visits_data_path <- "../TABMON_dataprep/territoryMappingData/01_data/processed/05_visits_only_data.rds"   # Visits from territory mapping data
 bugg_db_path     <- "../TABMON_dataprep/buggData/01_data/buggdata_db.duckdb"                              # BUGG data
+
 # Paths to filtered data after 02_prepare_comparison_data.R
-ldv_pam_season_path     <- file.path(data_dir, "01_ldv_pam_season.rds")
+ldv_termap_path         <- file.path(data_dir, "01_ldv_termap.rds")
 ldv_termap_100m_path    <- file.path(data_dir, "02_ldv_termap_100m.rds")
-ldv_pam_tw1_exact_path  <- file.path(data_dir, "03_ldv_pam_tw1_exact.rds")  
-ldv_pam_tw2_day_path    <- file.path(data_dir, "04_ldv_pam_tw2_day.rds") 
-ldv_pam_tw3_week_path   <- file.path(data_dir, "05_ldv_pam_tw3_week.rds") 
+
+ldv_pam_season_path     <- file.path(data_dir, "03_ldv_pam_season.rds")
+ldv_pam_tw1_exact_path  <- file.path(data_dir, "04_ldv_pam_tw1_exact.rds")  
+ldv_pam_tw2_day_path    <- file.path(data_dir, "05_ldv_pam_tw2_day.rds") 
+ldv_pam_tw3_week_path   <- file.path(data_dir, "06_ldv_pam_tw3_week.rds") 
 
 # --- Constants ---
 
